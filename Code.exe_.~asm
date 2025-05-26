@@ -1,0 +1,408 @@
+; 8086 Text Editor for emu8086
+; Full version with file operations and basic editing
+; Compile as COM file
+
+.MODEL SMALL
+.STACK 100h
+
+.DATA
+; UI Elements
+welcome_msg      DB 13,10,'===== 8086 Text Editor =====',13,10
+DB 'F1 - New File',13,10
+DB 'F2 - Open File',13,10
+DB 'F3 - Save File',13,10
+DB 'ESC - Main Menu',13,10
+DB 'F10 - Quit',13,10
+DB '===============================',13,10,10,'$'
+filename_prompt  DB 13,10,'Enter filename (8 chars max): $'
+error_msg        DB 13,10,'Error! Press any key...$'
+saved_msg        DB 13,10,'File saved successfully!$'
+editing_msg      DB 13,10,'Editing mode - Type your text (ESC to menu)',13,10,'$'
+
+; File Handling
+file_handle      DW 0
+filename         DB '        TXT',0  ; 8.3 format
+file_buffer      DB 4096 DUP('$')   ; Text buffer
+
+; Editor State
+cursor_pos       DW 0               ; Buffer position
+in_edit_mode     DB 0               ; 0=menu, 1=editing
+
+.CODE
+START:
+MOV AX, @DATA
+MOV DS, AX
+MOV ES, AX
+
+CALL CLEAR_SCREEN
+CALL SHOW_MAIN_MENU
+
+MAIN_LOOP:
+CALL READ_KEY
+JMP MAIN_LOOP
+
+; ========== KEYBOARD HANDLER ==========
+READ_KEY PROC
+MOV AH, 00h
+INT 16h
+
+; Check if in edit mode
+CMP [in_edit_mode], 1
+JE HANDLE_EDIT_KEYS
+
+; Main menu keys
+CMP AH, 3Bh        ; F1 - New
+JE NEW_FILE
+CMP AH, 3Ch        ; F2 - Open
+JE OPEN_FILE
+CMP AH, 3Dh        ; F3 - Save
+JE SAVE_FILE
+CMP AH, 44h        ; F10 - Quit
+JE EXIT_PROGRAM
+RET
+
+HANDLE_EDIT_KEYS:
+CMP AL, 1Bh        ; ESC - Exit edit mode
+JE EXIT_EDIT_MODE
+CMP AL, 0Dh        ; Enter
+JE HANDLE_ENTER
+CMP AL, 08h        ; Backspace
+JE HANDLE_BACKSPACE
+
+; Printable characters (20h-7Eh)
+CMP AL, 20h
+JB READ_KEY_DONE
+CMP AL, 7Eh
+JA READ_KEY_DONE
+
+CALL INSERT_CHAR
+JMP READ_KEY_DONE
+
+HANDLE_ENTER:
+MOV AL, 0Dh        ; CR
+CALL INSERT_CHAR
+MOV AL, 0Ah        ; LF
+CALL INSERT_CHAR
+JMP READ_KEY_DONE
+
+HANDLE_BACKSPACE:
+CALL DELETE_CHAR
+JMP READ_KEY_DONE
+
+EXIT_EDIT_MODE:
+MOV [in_edit_mode], 0
+CALL SHOW_MAIN_MENU
+
+READ_KEY_DONE:
+RET
+READ_KEY ENDP
+
+; ========== TEXT EDITING FUNCTIONS ==========
+INSERT_CHAR PROC
+PUSH AX
+PUSH SI
+
+LEA SI, file_buffer
+ADD SI, [cursor_pos]
+MOV [SI], AL
+
+; Display character
+MOV AH, 0Eh
+INT 10h
+
+INC [cursor_pos]
+
+POP SI
+POP AX
+RET
+INSERT_CHAR ENDP
+
+DELETE_CHAR PROC
+CMP [cursor_pos], 0
+JE DELETE_DONE
+
+DEC [cursor_pos]
+LEA SI, file_buffer
+ADD SI, [cursor_pos]
+MOV BYTE PTR [SI], '$'
+
+; Move cursor back
+MOV AH, 03h        ; Get cursor position
+INT 10h
+DEC DL
+CMP DL, 0FFh
+JNE SET_CURSOR
+DEC DH
+MOV DL, 79
+SET_CURSOR:
+MOV AH, 02h
+INT 10h
+
+; Print space to erase
+MOV AL, ' '
+MOV AH, 0Eh
+INT 10h
+
+; Move cursor back again
+MOV AH, 03h
+INT 10h
+DEC DL
+CMP DL, 0FFh
+JNE SET_CURSOR2
+DEC DH
+MOV DL, 79
+SET_CURSOR2:
+MOV AH, 02h
+INT 10h
+
+DELETE_DONE:
+RET
+DELETE_CHAR ENDP
+
+; ========== FILE OPERATIONS ==========
+NEW_FILE:
+CALL GET_FILENAME
+CALL CLEAR_BUFFER
+CALL ENTER_EDIT_MODE
+JMP MAIN_LOOP
+
+OPEN_FILE:
+CALL GET_FILENAME
+CALL LOAD_FILE
+JC FILE_ERROR
+CALL ENTER_EDIT_MODE
+JMP MAIN_LOOP
+
+SAVE_FILE:
+CALL SAVE_BUFFER
+JC FILE_ERROR
+CALL SHOW_SAVED_MSG
+JMP MAIN_LOOP
+
+FILE_ERROR:
+CALL SHOW_ERROR
+JMP MAIN_LOOP
+
+LOAD_FILE PROC
+MOV AH, 3Dh        ; Open file
+MOV AL, 0          ; Read-only
+LEA DX, filename
+INT 21h
+JC LOAD_ERROR
+
+MOV [file_handle], AX
+
+; Read file
+MOV AH, 3Fh
+MOV BX, [file_handle]
+LEA DX, file_buffer
+MOV CX, 4095
+INT 21h
+JC LOAD_ERROR
+
+; Null-terminate
+LEA SI, file_buffer
+ADD SI, AX
+MOV BYTE PTR [SI], '$'
+
+CALL CLOSE_FILE
+CLC
+RET
+
+LOAD_ERROR:
+STC
+RET
+LOAD_FILE ENDP
+
+SAVE_BUFFER PROC
+; Create/truncate file
+MOV AH, 3Ch
+MOV CX, 0          ; Normal file
+LEA DX, filename
+INT 21h
+JC SAVE_ERROR
+
+MOV [file_handle], AX
+
+; Write buffer
+MOV AH, 40h
+MOV BX, [file_handle]
+LEA DX, file_buffer
+MOV CX, [cursor_pos]
+INT 21h
+JC SAVE_ERROR
+
+CALL CLOSE_FILE
+CLC
+RET
+
+SAVE_ERROR:
+STC
+RET
+SAVE_BUFFER ENDP
+
+CLOSE_FILE PROC
+MOV AH, 3Eh
+MOV BX, [file_handle]
+INT 21h
+RET
+CLOSE_FILE ENDP
+
+; ========== UI FUNCTIONS ==========
+SHOW_MAIN_MENU PROC
+CALL CLEAR_SCREEN
+MOV AH, 09h
+LEA DX, welcome_msg
+INT 21h
+RET
+SHOW_MAIN_MENU ENDP
+
+ENTER_EDIT_MODE PROC
+MOV [in_edit_mode], 1
+CALL CLEAR_SCREEN
+
+; Show editing header
+MOV AH, 09h
+LEA DX, editing_msg
+INT 21h
+
+; Display existing text
+LEA SI, file_buffer
+MOV CX, 4096
+PRINT_LOOP:
+MOV AL, [SI]
+CMP AL, '$'
+JE PRINT_DONE
+MOV AH, 0Eh
+INT 10h
+INC SI
+LOOP PRINT_LOOP
+
+PRINT_DONE:
+RET
+ENTER_EDIT_MODE ENDP
+
+SHOW_ERROR PROC
+MOV AH, 09h
+LEA DX, error_msg
+INT 21h
+; Wait for key
+MOV AH, 00h
+INT 16h
+RET
+SHOW_ERROR ENDP
+
+SHOW_SAVED_MSG PROC
+MOV AH, 09h
+LEA DX, saved_msg
+INT 21h
+RET
+SHOW_SAVED_MSG ENDP
+
+; ========== UTILITIES ==========
+GET_FILENAME PROC
+CALL CLEAR_SCREEN
+MOV AH, 09h
+LEA DX, filename_prompt
+INT 21h
+
+; Clear filename
+MOV CX, 11
+LEA DI, filename
+MOV AL, ' '
+REP STOSB
+
+; Read input
+MOV AH, 0Ah
+LEA DX, filename_input
+INT 21h
+
+; Convert to 8.3 format
+LEA SI, filename_input + 2
+LEA DI, filename
+MOV CX, 8
+COPY_NAME:
+MOV AL, [SI]
+CMP AL, 0Dh       ; Enter
+JE PAD_NAME
+CMP AL, '.'       ; Extension
+JE HANDLE_EXT
+MOV [DI], AL
+INC SI
+INC DI
+LOOP COPY_NAME
+
+; Skip remaining name chars
+SKIP_REMAINING:
+MOV AL, [SI]
+CMP AL, 0Dh
+JE PAD_EXT
+CMP AL, '.'
+JE HANDLE_EXT
+INC SI
+JMP SKIP_REMAINING
+
+HANDLE_EXT:
+INC SI            ; Skip '.'
+LEA DI, filename + 8
+MOV CX, 3
+COPY_EXT:
+MOV AL, [SI]
+CMP AL, 0Dh
+JE PAD_EXT
+MOV [DI], AL
+INC SI
+INC DI
+LOOP COPY_EXT
+RET
+
+PAD_NAME:
+LEA DI, filename
+ADD DI, CX
+MOV AL, ' '
+REP STOSB
+JMP PAD_EXT
+
+PAD_EXT:
+LEA DI, filename + 8
+MOV CX, 3
+MOV AL, ' '
+REP STOSB
+RET
+
+filename_input DB 12,?,12 DUP(0)
+GET_FILENAME ENDP
+
+CLEAR_BUFFER PROC
+LEA DI, file_buffer
+MOV CX, 4096
+MOV AL, '$'
+REP STOSB
+MOV [cursor_pos], 0
+RET
+CLEAR_BUFFER ENDP
+
+CLEAR_SCREEN PROC
+MOV AX, 0600h     ; Scroll entire window
+MOV BH, 07h       ; Normal attribute
+MOV CX, 0000h     ; Upper-left
+MOV DX, 184Fh     ; Lower-right
+INT 10h
+
+; Home cursor
+MOV AH, 02h
+MOV BH, 00h
+MOV DX, 0000h
+INT 10h
+RET
+CLEAR_SCREEN ENDP
+
+EXIT_PROGRAM:
+MOV AH, 4Ch
+INT 21h
+
+END START
+
+
+
+; [SOURCE]: C:\Users\yonas\Documents\GitHub\Simple-Text-Editor\Code.asm

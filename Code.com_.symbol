@@ -2,10 +2,20 @@
 ===================================================================================================
 Name                     	Offset    	Size      	Type      	Segment   
 ===================================================================================================
-START_LOOP               	00107     	-1        	LABEL     	(NOSEG)   
-EXIT_EDITOR              	00115     	-1        	LABEL     	(NOSEG)   
-INTRO_MSG                	00119     	1         	VAR       	(NOSEG)   
+FILENAME                 	00103     	1         	VAR       	(NOSEG)   
+HANDLE                   	0010C     	2         	VAR       	(NOSEG)   
+BUFFER                   	0010E     	1         	VAR       	(NOSEG)   
+EDIT                     	008DE     	2         	VAR       	(NOSEG)   
+CODE                     	008E0     	-1        	LABEL     	(NOSEG)   
+START                    	008E0     	-1        	LABEL     	(NOSEG)   
+INPUT                    	0093F     	-1        	LABEL     	(NOSEG)   
+RIGHT                    	00976     	-1        	LABEL     	(NOSEG)   
+LEFT                     	00984     	-1        	LABEL     	(NOSEG)   
+TAB                      	00992     	-1        	LABEL     	(NOSEG)   
+ERASE                    	009A3     	-1        	LABEL     	(NOSEG)   
+EXIT                     	009C3     	-1        	LABEL     	(NOSEG)   
+CLOSE                    	009EC     	-1        	LABEL     	(NOSEG)   
 ===================================================================================================
-[ 5/26/2025  --  11:16:40 AM ] 
+[ 5/26/2025  --  12:03:30 PM ] 
 < END >
  

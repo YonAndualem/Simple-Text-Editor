@@ -1,0 +1,60 @@
+< THE SYMBOL TABLE >  Code.exe_  --  emu8086 assembler version: 4.08 
+===================================================================================================
+Name                     	Offset    	Size      	Type      	Segment   
+===================================================================================================
+STACK                    	00000     	-5        	SEGMENT   	(ITSELF)  
+DATA                     	00010     	-5        	SEGMENT   	(ITSELF)  
+WELCOME_MSG              	00000     	1         	VAR       	data      
+FILENAME_PROMPT          	0008F     	1         	VAR       	data      
+ERROR_MSG                	000B0     	1         	VAR       	data      
+SAVED_MSG                	000CA     	1         	VAR       	data      
+EDITING_MSG              	000E5     	1         	VAR       	data      
+FILE_HANDLE              	00115     	2         	VAR       	data      
+FILENAME                 	00117     	1         	VAR       	data      
+FILE_BUFFER              	00123     	1         	VAR       	data      
+CURSOR_POS               	01123     	2         	VAR       	data      
+IN_EDIT_MODE             	01125     	1         	VAR       	data      
+CODE                     	00123     	-5        	SEGMENT   	(ITSELF)  
+START                    	00000     	-1        	LABEL     	code      
+MAIN_LOOP                	0000D     	-1        	LABEL     	code      
+READ_KEY                 	00012     	-1        	NEAR      	code      
+HANDLE_EDIT_KEYS         	0003E     	-1        	LABEL     	code      
+HANDLE_ENTER             	00057     	-1        	LABEL     	code      
+HANDLE_BACKSPACE         	00063     	-1        	LABEL     	code      
+EXIT_EDIT_MODE           	00068     	-1        	LABEL     	code      
+READ_KEY_DONE            	00070     	-1        	LABEL     	code      
+INSERT_CHAR              	00071     	-1        	NEAR      	code      
+DELETE_CHAR              	00087     	-1        	NEAR      	code      
+SET_CURSOR               	000AB     	-1        	LABEL     	code      
+SET_CURSOR2              	000C4     	-1        	LABEL     	code      
+DELETE_DONE              	000C8     	-1        	LABEL     	code      
+NEW_FILE                 	000C9     	-1        	LABEL     	code      
+OPEN_FILE                	000D5     	-1        	LABEL     	code      
+SAVE_FILE                	000E3     	-1        	LABEL     	code      
+FILE_ERROR               	000EE     	-1        	LABEL     	code      
+LOAD_FILE                	000F4     	-1        	NEAR      	code      
+LOAD_ERROR               	0011F     	-1        	LABEL     	code      
+SAVE_BUFFER              	00121     	-1        	NEAR      	code      
+SAVE_ERROR               	00146     	-1        	LABEL     	code      
+CLOSE_FILE               	00148     	-1        	NEAR      	code      
+SHOW_MAIN_MENU           	00151     	-1        	NEAR      	code      
+ENTER_EDIT_MODE          	0015C     	-1        	NEAR      	code      
+PRINT_LOOP               	00171     	-1        	LABEL     	code      
+PRINT_DONE               	0017E     	-1        	LABEL     	code      
+SHOW_ERROR               	0017F     	-1        	NEAR      	code      
+SHOW_SAVED_MSG           	0018B     	-1        	NEAR      	code      
+GET_FILENAME             	00193     	-1        	NEAR      	code      
+COPY_NAME                	001B7     	-1        	LABEL     	code      
+SKIP_REMAINING           	001C7     	-1        	LABEL     	code      
+HANDLE_EXT               	001D4     	-1        	LABEL     	code      
+COPY_EXT                 	001DB     	-1        	LABEL     	code      
+PAD_NAME                 	001E8     	-1        	LABEL     	code      
+PAD_EXT                  	001F3     	-1        	LABEL     	code      
+FILENAME_INPUT           	001FE     	1         	VAR       	code      
+CLEAR_BUFFER             	0020C     	-1        	NEAR      	code      
+CLEAR_SCREEN             	0021D     	-1        	NEAR      	code      
+EXIT_PROGRAM             	00234     	-1        	LABEL     	code      
+===================================================================================================
+[ 5/26/2025  --  6:01:22 PM ] 
+< END >
+ 
