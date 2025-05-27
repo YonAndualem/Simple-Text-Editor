@@ -1,0 +1,318 @@
+;===============================
+; Command-Line Text Editor - Patched
+; Includes:
+; - Cursor bounds check
+; - File save size fix
+; - Matrix overflow protection
+; - Better backspace handling
+; - Visual cursor settings
+; - Character-by-character file display
+; - Optional: line counter
+;===============================
+
+.MODEL SMALL
+.STACK 100H
+.DATA
+matrix      db 2000 dup(?)
+matrix_2    db 22 dup(?)
+row         db 2
+column      db 0
+curr_line   db 2
+curr_char   db 0
+deco1       db '  =================================================$'
+deco2       db '||            Command Line Text Editor             ||$'
+deco3       db '||                                                 ||$'
+deco4       db '||         ESC = Exit || CTRL+S = Save File        ||$'
+deco5       db '||              ARROW KEYS = Navigate              ||$'
+deco6       db '  =================================================$'
+docPrompt   db 'Enter Document Name (.txt): $'
+docName     db 50 dup(?)
+openPrompt  db 'Enter Document Name to Open: $'
+HANDLE      dw ?
+header      db '================================================================================','$'
+lineLabel   db 'Line: $'
+charCount   dw 0
+.CODE
+
+;====== MACROS ======
+newline macro
+mov dl, 10
+mov ah, 2
+int 21h
+mov dl, 13
+mov ah, 2
+int 21h
+endm
+remove macro
+mov dl, 8
+mov ah, 2
+int 21h
+mov dl, 32
+int 21h
+mov dl, 8
+int 21h
+endm
+goto_pos macro r, c
+mov ah, 02h
+mov dh, r
+mov dl, c
+int 10h
+endm
+clrScrn macro
+mov ah, 0
+mov al, 03h
+int 10h
+endm
+
+start_menu proc
+goto_pos 5, 12
+mov dx, offset deco1
+mov ah, 9
+int 21h
+goto_pos 6, 12
+mov dx, offset deco2
+mov ah, 9
+int 21h
+goto_pos 7, 12
+mov dx, offset deco3
+mov ah, 9
+int 21h
+goto_pos 8, 12
+mov dx, offset deco4
+mov ah, 9
+int 21h
+goto_pos 9, 12
+mov dx, offset deco5
+mov ah, 9
+int 21h
+goto_pos 10, 12
+mov dx, offset deco6
+mov ah, 9
+int 21h
+goto_pos 13, 12
+mov dx, offset docPrompt
+mov ah, 9
+int 21h
+
+mov cx, 0
+mov si, offset docName
+get_input:
+mov ah, 1
+int 21h
+cmp al, 13
+je done_input
+cmp al, 8
+je handle_back
+mov [si], al
+inc si
+inc cx
+jmp get_input
+handle_back:
+cmp cx, 0
+je get_input
+dec si
+dec cx
+remove
+jmp get_input
+done_input:
+ret
+start_menu endp
+
+upper_bar proc
+goto_pos 0, 0
+mov dx, offset docName
+mov ah, 9
+int 21h
+goto_pos 1, 0
+mov dx, offset header
+mov ah, 9
+int 21h
+ret
+upper_bar endp
+
+print_matrix proc
+push si
+push cx
+mov si, offset matrix
+mov cx, charCount
+.loop:
+lodsb
+mov dl, al
+mov ah, 2
+int 21h
+loop .loop
+pop cx
+pop si
+ret
+print_matrix endp
+
+MAIN PROC
+mov ax, @data
+mov ds, ax
+clrScrn
+call start_menu
+clrScrn
+call upper_bar
+
+mov row, 2
+mov column, 0
+mov si, offset matrix
+mov curr_line, 2
+mov curr_char, 0
+mov charCount, 0
+
+main_loop:
+goto_pos row, column
+mov ah, 0
+int 16h
+cmp al, 19
+je save_file
+cmp al, 27
+je exit_editor
+cmp al, 15
+je open_file
+cmp ah, 48h
+je move_up
+cmp ah, 50h
+je move_down
+cmp ah, 4Bh
+je move_left
+cmp ah, 4Dh
+je move_right
+cmp ah, 0Eh
+je backspace
+cmp ah, 1Ch
+je newline_press
+
+; character input
+cmp si, offset matrix + 2000
+jae main_loop
+mov dl, al
+mov ah, 2
+int 21h
+mov [si], al
+inc si
+inc column
+inc curr_char
+inc charCount
+jmp main_loop
+
+newline_press:
+mov al, 10
+mov [si], al
+inc si
+newline
+inc row
+mov column, 0
+inc curr_line
+mov curr_char, 0
+inc charCount
+jmp main_loop
+
+backspace:
+cmp si, offset matrix
+jbe main_loop
+dec si
+dec charCount
+remove
+cmp column, 0
+jne .cont
+cmp row, 2
+jbe main_loop
+dec row
+mov column, 79
+jmp main_loop
+.cont:
+dec column
+jmp main_loop
+
+move_up:
+cmp row, 2
+jbe main_loop
+dec row
+jmp main_loop
+move_down:
+cmp row, 24
+jae main_loop
+inc row
+jmp main_loop
+move_left:
+cmp column, 0
+jbe main_loop
+dec column
+jmp main_loop
+move_right:
+cmp column, 79
+jae main_loop
+inc column
+jmp main_loop
+
+save_file:
+mov ah, 3Ch
+xor cx, cx
+mov dx, offset docName
+int 21h
+mov ah, 3Dh
+mov al, 1
+mov dx, offset docName
+int 21h
+mov HANDLE, ax
+mov ah, 40h
+mov bx, HANDLE
+mov cx, charCount
+mov dx, offset matrix
+int 21h
+jmp main_loop
+
+open_file:
+goto_pos 22, 0
+mov dx, offset openPrompt
+mov ah, 9
+int 21h
+mov di, offset docName
+mov cx, 0
+get_open:
+mov ah, 1
+int 21h
+cmp al, 13
+je do_open
+cmp al, 8
+je rm_open
+mov [di], al
+inc di
+inc cx
+jmp get_open
+rm_open:
+cmp cx, 0
+je get_open
+dec di
+dec cx
+remove
+jmp get_open
+do_open:
+clrScrn
+call upper_bar
+mov ah, 3Dh
+xor al, al
+mov dx, offset docName
+int 21h
+mov HANDLE, ax
+mov ah, 3Fh
+mov bx, HANDLE
+mov cx, 2000
+mov dx, offset matrix
+int 21h
+mov charCount, ax
+call print_matrix
+jmp main_loop
+
+exit_editor:
+mov ah, 4Ch
+int 21h
+MAIN ENDP
+END MAIN
+
+
+
+
+; [SOURCE]: C:\EMU8086\MySource\mycode.asm
