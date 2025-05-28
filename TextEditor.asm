@@ -2,6 +2,8 @@
 .model flat, stdcall
 option casemap:none
 
+;Include Libraries to import Windows Libraries MASM32
+
 include C:\masm32\include\comdlg32.inc
 includelib C:\masm32\lib\comdlg32.lib
 include C:\masm32\include\windows.inc
@@ -14,7 +16,7 @@ includelib C:\masm32\lib\comctl32.lib
 
 .data
     className db "MyWindowClass", 0
-    windowTitle db "Text editor plus", 0
+    windowTitle db "Simple Text Editor", 0
     editClass db "EDIT", 0
     buttonClass db "BUTTON", 0
     buttonTextSave  db "Save", 0
@@ -26,10 +28,17 @@ includelib C:\masm32\lib\comctl32.lib
     fileSaved dd 0
     unsavedChanges db 0
 
+    ; Status bar formatting
+    
     statusClass db "msctls_statusbar32",0
     statusFormat db "Length: %u | Words: %u",0
-    msgExitPrompt db "You have unsaved changes. Exit anyway?",0
-    msgConfirmExit db "Confirm Exit",0
+
+    ;Exit prompt Dialogue
+    
+    msgExitPrompt db "You have unsaved changes. Do you want to Exit anyway?",0
+    msgConfirmExit db "Are you sure?",0
+
+; Unique numbers assigned to know which command is triggered WMCommand
 
 .const
     BTN_SAVE equ 1001
@@ -56,6 +65,8 @@ includelib C:\masm32\lib\comctl32.lib
     temph DWORD ?
 
 .code
+
+; Word count
 
 CountWords proc pBuffer:DWORD
     push ebx
@@ -92,6 +103,8 @@ cw_done:
     pop ebx
     ret
 CountWords endp
+
+; Status bar update
 
 UpdateStatusBar proc
     LOCAL nLen:DWORD
