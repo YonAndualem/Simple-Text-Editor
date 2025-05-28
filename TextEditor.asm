@@ -23,6 +23,8 @@ includelib C:\masm32\lib\comctl32.lib
     buttonTextSaveAs db "Save As", 0
     buttonTextOpen db "Open", 0
     exitButtonText db "Exit", 0
+    helpButtonText db "Help", 0
+    aboutButtonText db "About", 0
     filterText db "Text Files (*.txt)",0,"*.txt",0,"All Files (*.*)",0,"*.*",0,0
     defExt db "txt", 0
     fileSaved dd 0
@@ -37,6 +39,8 @@ includelib C:\masm32\lib\comctl32.lib
     
     msgExitPrompt db "You have unsaved changes. Do you want to Exit anyway?",0
     msgConfirmExit db "Are you sure?",0
+    msgHelp db "Use Open to load a file, Save or Save As to store your edits, and Exit to close the editor—unsaved changes will prompt a save.",0
+    msgAbout db "Simple Text Editor, Developed as a MASM32 example project.",0
 
 ; Unique numbers assigned to know which command is triggered WMCommand
 
@@ -45,6 +49,8 @@ includelib C:\masm32\lib\comctl32.lib
     BTN_SAVEAS equ 1002
     BTN_OPEN equ 1003
     BTN_EXIT equ 1004
+    BTN_HELP equ 1005
+    BTN_ABOUT equ 1006
 
 .data?
     wc WNDCLASS <>
@@ -59,6 +65,8 @@ includelib C:\masm32\lib\comctl32.lib
     hBtnSaveAs HWND ?
     hBtnOpen HWND ?
     hBtnExit HWND ?
+    hBtnHelp HWND ?
+    hBtnAbout HWND ?
     wndWidth DWORD ?
     wndHeight DWORD ?
     tempw DWORD ?
@@ -128,22 +136,32 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 
         invoke CreateWindowEx, 0, offset buttonClass, offset buttonTextOpen,
             WS_CHILD or WS_VISIBLE or BS_PUSHBUTTON,
-            10, 10, 100, 32, hWnd, BTN_OPEN, wc.hInstance, NULL
+            10, 10, 90, 32, hWnd, BTN_OPEN, wc.hInstance, NULL
         mov hBtnOpen, eax
 
         invoke CreateWindowEx, 0, offset buttonClass, offset buttonTextSave,
             WS_CHILD or WS_VISIBLE or BS_PUSHBUTTON,
-            120, 10, 100, 32, hWnd, BTN_SAVE, wc.hInstance, NULL
+            110, 10, 90, 32, hWnd, BTN_SAVE, wc.hInstance, NULL
         mov hBtnSave, eax
 
         invoke CreateWindowEx, 0, offset buttonClass, offset buttonTextSaveAs,
             WS_CHILD or WS_VISIBLE or BS_PUSHBUTTON,
-            230, 10, 100, 32, hWnd, BTN_SAVEAS, wc.hInstance, NULL
+            210, 10, 90, 32, hWnd, BTN_SAVEAS, wc.hInstance, NULL
         mov hBtnSaveAs, eax
+
+        invoke CreateWindowEx, 0, offset buttonClass, offset helpButtonText,
+            WS_CHILD or WS_VISIBLE or BS_PUSHBUTTON,
+            310, 10, 90, 32, hWnd, BTN_HELP, wc.hInstance, NULL
+        mov hBtnHelp, eax
+
+        invoke CreateWindowEx, 0, offset buttonClass, offset aboutButtonText,
+            WS_CHILD or WS_VISIBLE or BS_PUSHBUTTON,
+            410, 10, 90, 32, hWnd, BTN_ABOUT, wc.hInstance, NULL
+        mov hBtnAbout, eax
 
         invoke CreateWindowEx, 0, offset buttonClass, offset exitButtonText,
             WS_CHILD or WS_VISIBLE or BS_PUSHBUTTON,
-            340, 10, 100, 32, hWnd, BTN_EXIT, wc.hInstance, NULL
+            510, 10, 90, 32, hWnd, BTN_EXIT, wc.hInstance, NULL
         mov hBtnExit, eax
 
         ; Edit control (below buttons)
@@ -276,6 +294,10 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
             invoke PostQuitMessage, 0
             xor eax, eax
             ret
+        .elseif eax == BTN_HELP
+            invoke MessageBox, hWnd, offset msgHelp, offset windowTitle, MB_OK or MB_ICONINFORMATION
+        .elseif eax == BTN_ABOUT
+            invoke MessageBox, hWnd, offset msgAbout, offset windowTitle, MB_OK or MB_ICONINFORMATION
         .endif
 
         ; Detect EN_CHANGE
