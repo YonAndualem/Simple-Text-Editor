@@ -1,12 +1,15 @@
 # Simple Text Editor
 
 This project is a simple text editor implemented in assembly language using MASM32 for Windows. It demonstrates basic file I/O, text manipulation, and user interaction with a graphical window interface.
-
 ## Features
-
 - Open, edit, and save text files
 - Basic navigation (move cursor, insert, delete)
 - Simple graphical user interface (Windows application)
+- Help and About buttons for additional user guidance
+- Responsive resizing for better usability on different screen sizes
+- Open, edit, and save text files
+- Basic navigation (move cursor, insert, delete)
+
 
 ## Requirements
 
